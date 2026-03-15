@@ -1,0 +1,33 @@
+{
+  "name": "api-project",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "jest --watchAll",
+    "test:ci": "jest --ci",
+    "db:migrate": "node scripts/run-sql-migrations.js",
+    "seed:all": "npm run seed:regions && npm run seed:property-types && npm run seed:housing-sales && npm run seed:buyer-dwelling && npm run seed:affordability && npm run seed:rental && npm run seed:implied-income",
+    "seed:regions": "node scripts/seed-regions.js",
+    "seed:property-types": "node scripts/seed-property-types.js",
+    "seed:housing-sales": "node scripts/seed-housing-sales-data.js",
+    "seed:buyer-dwelling": "node scripts/seed-housing-sales-by-buyer-dwelling.js",
+    "seed:affordability": "node scripts/seed-affordability-metrics.js",
+    "seed:rental": "node scripts/seed-rental-metrics.js",
+    "seed:implied-income": "node scripts/compute-implied-income.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.6.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "pg": "^8.20.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.0.0"
+  }
+}

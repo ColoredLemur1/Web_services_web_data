@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    container_name: api_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user_admin
+      POSTGRES_PASSWORD: testpassword123
+      POSTGRES_DB: api_data
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

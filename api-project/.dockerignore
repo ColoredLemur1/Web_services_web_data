@@ -1,0 +1,30 @@
+# Dependencies (reinstalled in image)
+node_modules
+npm-debug.log*
+
+# Environment and secrets (must be set at runtime)
+.env
+.env.*
+
+# Git and IDE
+.git
+.gitignore
+.dockerignore
+*.md
+
+# Tests and dev tooling (not needed in production image)
+**/*.test.js
+**/*.spec.js
+__tests__
+coverage
+.jest
+jest.config.*
+
+# Scripts and data (seeds/migrations run separately; data not needed in app image)
+scripts
+data
+
+# Misc
+Dockerfile
+docker-compose*.yml
+*.log
