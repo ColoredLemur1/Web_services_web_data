@@ -1,6 +1,6 @@
 const pool = require('../config/db');
 const { createError } = require('../middleware/errorHandler');
-const { validateListQuery, validateAffordabilityIndexQuery } = require('../middleware/validateQuery');
+// Query/body validation is done by Joi in routes (middleware/validateJoi + middleware/schemas).
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
@@ -21,9 +21,6 @@ function parseLimitOffset(query) {
  */
 const getHousingSales = async (req, res, next) => {
   try {
-    const validationMsg = validateListQuery(req.query, { allowMinMaxPrice: true });
-    if (validationMsg) return next(createError(400, validationMsg));
-
     const {
       region_id,
       region_name,
@@ -38,6 +35,9 @@ const getHousingSales = async (req, res, next) => {
       offset: offsetParam,
     } = req.query;
 
+    if (min_price != null && max_price != null && min_price > max_price) {
+      return next(createError(400, 'min_price must be less than or equal to max_price'));
+    }
     const { limit, offset } = parseLimitOffset({ limit: limitParam, offset: offsetParam });
 
     const params = [];
@@ -132,9 +132,6 @@ const getHousingSales = async (req, res, next) => {
  */
 const getHousingSalesByBuyerDwelling = async (req, res, next) => {
   try {
-    const validationMsg = validateListQuery(req.query, { allowMinMaxPrice: true });
-    if (validationMsg) return next(createError(400, validationMsg));
-
     const {
       region_id,
       region_name,
@@ -148,6 +145,9 @@ const getHousingSalesByBuyerDwelling = async (req, res, next) => {
       offset: offsetParam,
     } = req.query;
 
+    if (min_price != null && max_price != null && min_price > max_price) {
+      return next(createError(400, 'min_price must be less than or equal to max_price'));
+    }
     const { limit, offset } = parseLimitOffset({ limit: limitParam, offset: offsetParam });
 
     const params = [];
@@ -233,9 +233,6 @@ const getHousingSalesByBuyerDwelling = async (req, res, next) => {
  */
 const getAffordabilityMetrics = async (req, res, next) => {
   try {
-    const validationMsg = validateListQuery(req.query);
-    if (validationMsg) return next(createError(400, validationMsg));
-
     const {
       region_id,
       region_name,
@@ -320,9 +317,6 @@ const getAffordabilityMetrics = async (req, res, next) => {
  */
 const getRentalMetrics = async (req, res, next) => {
   try {
-    const validationMsg = validateListQuery(req.query, { allowMinMaxRent: true });
-    if (validationMsg) return next(createError(400, validationMsg));
-
     const {
       region_id,
       region_name,
@@ -335,6 +329,9 @@ const getRentalMetrics = async (req, res, next) => {
       offset: offsetParam,
     } = req.query;
 
+    if (min_rent != null && max_rent != null && min_rent > max_rent) {
+      return next(createError(400, 'min_rent must be less than or equal to max_rent'));
+    }
     const { limit, offset } = parseLimitOffset({ limit: limitParam, offset: offsetParam });
 
     const params = [];
@@ -434,14 +431,10 @@ const getRegions = async (req, res, next) => {
  */
 const createRegion = async (req, res, next) => {
   try {
-    const { name, gss_code } = req.body || {};
-    const trimmedName = typeof name === 'string' ? name.trim() : '';
-    if (!trimmedName) {
-      return next(createError(400, 'name is required and must be a non-empty string'));
-    }
+    const { name, gss_code } = req.body;
     const result = await pool.query(
       'INSERT INTO regions (name, gss_code) VALUES ($1, $2) RETURNING id, name, gss_code',
-      [trimmedName, gss_code && String(gss_code).trim() || null]
+      [name, gss_code || null]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -456,23 +449,13 @@ const createRegion = async (req, res, next) => {
  */
 const updateRegion = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    if (Number.isNaN(id) || id < 1) {
-      return next(createError(400, 'id must be a positive integer'));
-    }
-    const { name, gss_code } = req.body || {};
-    const trimmedName = name !== undefined ? (typeof name === 'string' ? name.trim() : '') : undefined;
-    if (trimmedName === '' || (name !== undefined && !trimmedName)) {
-      return next(createError(400, 'name must be a non-empty string when provided'));
-    }
-    if (trimmedName === undefined && gss_code === undefined) {
-      return next(createError(400, 'At least one of name or gss_code is required'));
-    }
+    const id = req.params.id;
+    const { name, gss_code } = req.body;
     const updates = [];
     const values = [];
     let n = 1;
-    if (trimmedName !== undefined) { updates.push(`name = $${n++}`); values.push(trimmedName); }
-    if (gss_code !== undefined) { updates.push(`gss_code = $${n++}`); values.push(String(gss_code).trim() || null); }
+    if (name !== undefined) { updates.push(`name = $${n++}`); values.push(name); }
+    if (gss_code !== undefined) { updates.push(`gss_code = $${n++}`); values.push(gss_code || null); }
     values.push(id);
     const result = await pool.query(
       `UPDATE regions SET ${updates.join(', ')} WHERE id = $${n} RETURNING id, name, gss_code`,
@@ -492,10 +475,7 @@ const updateRegion = async (req, res, next) => {
  */
 const deleteRegion = async (req, res, next) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    if (Number.isNaN(id) || id < 1) {
-      return next(createError(400, 'id must be a positive integer'));
-    }
+    const id = req.params.id;
     const result = await pool.query('DELETE FROM regions WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) return next(createError(404, 'Region not found'));
     res.status(204).send();
@@ -541,12 +521,7 @@ const getBuyerDwellingCategories = async (req, res, next) => {
  */
 const getAffordabilityIndex = async (req, res, next) => {
   try {
-    const { salary, region_id, region_name } = req.query;
-
-    const validationMsg = validateAffordabilityIndexQuery(req.query);
-    if (validationMsg) return next(createError(400, validationMsg));
-
-    const salaryNum = parseFloat(salary);
+    const { salary: salaryNum, region_id, region_name } = req.query;
 
     // Resolve region
     let regionRow;

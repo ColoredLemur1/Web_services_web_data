@@ -61,6 +61,15 @@ Full parameter tables, request/response examples, and schemas are in Swagger UI 
 
 All GET endpoints are public. Only region CRUD (POST/PUT/DELETE `/api/regions`) requires the API key.
 
+### For API consumers (using a deployed API)
+
+If the API is already deployed (e.g. on Railway), **you do not need any database credentials or a Gemini key.** You only need:
+
+- **Base URL** of the API (e.g. `https://your-app.railway.app`). Use it for all GET and POST/PUT/DELETE requests.
+- **API key** only if you need to call admin routes (POST/PUT/DELETE on regions). The API owner gives you this key; send it in the `x-api-key` header or `Authorization: Bearer <key>`.
+
+All environment variables (database, `API_KEY`, `GEMINI_API_KEY`) are set by the **deployer** who runs the server. You are not charged for Gemini; the API owner is.
+
 ## Prerequisites
 
 - Node.js v20 or higher (LTS recommended)
@@ -84,16 +93,18 @@ cd Web_services_web_data/api-project
 npm install
 ```
 
-3. Create a `.env` file in `api-project/` (same folder as `app.js`). Set variables for your environment (e.g. local development or your hosted database and API key):
+3. Create a `.env` file in `api-project/` (same folder as `app.js`). These variables are for **you as the deployer** (or for local development). Only the person running or deploying the API needs these; API consumers do not.
 
 ```env
+# All of these are for the deployer only. API consumers do not set them.
 PORT=<port your server listens on>
 DB_USER=<database user>
 DB_HOST=<database host>
 DB_NAME=<database name>
 DB_PASSWORD=<database password>
 DB_PORT=<database port>
-API_KEY=<your secret API key for admin routes>
+API_KEY=<key you choose for admin CRUD; give this to clients who need it>
+GEMINI_API_KEY=<optional; for AI insight endpoints; you are charged, not consumers>
 ```
 
 4. Start Postgres (optional, e.g. for local development with Docker Compose):
@@ -128,12 +139,13 @@ cd api-project
 docker build -t uk-housing-api .
 ```
 
-Run the container with environment variables set for `PORT`, `DB_*`, and `API_KEY`. The Dockerfile uses a multi-stage build (builder + production) and runs as a non-root user. Docker Compose in this repo is for the database only; the API can be run on the host or by another orchestrator.
+Run the container with environment variables set for `PORT`, `DB_*`, `API_KEY`, and optionally `GEMINI_API_KEY`. These are for the deployer only; API consumers do not set them. The Dockerfile uses a multi-stage build (builder + production) and runs as a non-root user. Docker Compose in this repo is for the database only; the API can be run on the host or by another orchestrator.
 
-### Notes and Troubleshooting
+### Notes and Troubleshooting (deployers)
 
-- **Database connection:** Ensure Postgres is reachable and `.env` has correct `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` for your environment.
-- **API key:** Set `API_KEY` in `.env` to use POST/PUT/DELETE on regions. Without it, those routes return 401.
+- **Database connection:** Ensure Postgres is reachable and your env has correct `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+- **API key:** Set `API_KEY` in your env so that POST/PUT/DELETE on regions work. Without it, those routes return 401. This is the key you may share with clients who need CRUD.
+- **GEMINI_API_KEY:** Set only if you enable AI insight endpoints. You (the deployer) are charged when those endpoints are called; consumers do not need this key.
 - **Seeding:** Run `npm run seed:all` after migrations. For per-script details and CSV file names, see [api-project/scripts/README.md](api-project/scripts/README.md).
 - **Tests:** Run `npm run test:ci` from `api-project/`. Requires Postgres and `API_KEY` in `.env` for full CRUD tests.
 
@@ -159,13 +171,15 @@ Data flows: external sources → seed scripts → PostgreSQL; clients → Expres
 
 ## Scripts and Data
 
-- **Migrations:** `npm run db:migrate` (run from `api-project/`). SQL files in `api-project/scripts/sql/` run in order to create or alter tables.
+- **Migrations:** `npm run db:migrate` (run from `api-project/`). SQL files in `api-project/scripts/sql/` run in order (01–07 create tables; 08 adds performance indexes on region_id, period, category_id, property_type_id).
 - **Seeding:** `npm run seed:all` runs, in order: regions, property-types, housing-sales, buyer-dwelling, affordability, rental, implied-income. Each table has a dedicated seed (regions and property_types via `seed:regions` and `seed:property-types`; buyer_dwelling_categories via migration 04; the rest via the scripts above). For prerequisites and per-script details, see [api-project/scripts/README.md](api-project/scripts/README.md).
 - **Testing:** `npm test` (watch) or `npm run test:ci` (single run). Tests live in `api-project/__tests__/api.test.js` and cover status codes, affordability index shape and boundary cases, and regions CRUD with teardown.
 
-## Configuration
+## Configuration (for deployers / API owners)
 
-- **Environment variables:** Stored in `api-project/.env`. Required: `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT` for PostgreSQL; optional `PORT` (server listen port); `API_KEY` for admin write operations.
-- **API key:** Send the key in the `x-api-key` header or as `Authorization: Bearer <key>` for POST, PUT, PATCH, and DELETE. GET does not require a key.
-- **Swagger:** Served at `/api-docs`; no auth required to view. Use the "Authorize" button in Swagger UI to set your API key when testing protected routes.
+All of the following are set by **whoever runs or deploys the API** (e.g. you on Railway). End-users of your deployed API do not set these; they only need your API base URL and, for CRUD, the API key you give them.
+
+- **Environment variables** (in `api-project/.env` or your host’s env): `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT` for PostgreSQL; optional `PORT`; `API_KEY` for protecting admin routes (you choose this key and share it with clients who need CRUD); `GEMINI_API_KEY` for AI-powered endpoints (get a key at [Google AI Studio](https://aistudio.google.com/) — you are charged for Gemini usage when consumers call the insight endpoint; consumers do not need a Gemini key).
+- **API key (for consumers):** Clients that need to call POST/PUT/DELETE on regions use the key you set as `API_KEY`, in the `x-api-key` header or `Authorization: Bearer <key>`. GET endpoints do not require a key.
+- **Swagger:** Served at `/api-docs`; no auth required to view. Use the "Authorize" button in Swagger UI to set the API key when testing protected routes.
 

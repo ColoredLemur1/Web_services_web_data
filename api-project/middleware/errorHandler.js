@@ -33,9 +33,13 @@ function globalErrorHandler(err, req, res, next) {
             ? 'Conflict'
             : statusCode === 201
               ? 'Created'
-              : statusCode >= 500
-                ? 'Internal Server Error'
-                : 'Error';
+              : statusCode === 502
+                ? 'Bad Gateway'
+                : statusCode === 503
+                  ? 'Service Unavailable'
+                  : statusCode >= 500
+                    ? 'Internal Server Error'
+                    : 'Error';
 
   res.status(statusCode).json({
     error: statusLabel,

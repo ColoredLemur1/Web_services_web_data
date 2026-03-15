@@ -36,6 +36,7 @@ COPY --from=builder --chown=nodejs:nodejs /app/config ./config
 COPY --from=builder --chown=nodejs:nodejs /app/controllers ./controllers
 COPY --from=builder --chown=nodejs:nodejs /app/middleware ./middleware
 COPY --from=builder --chown=nodejs:nodejs /app/routes ./routes
+COPY --from=builder --chown=nodejs:nodejs /app/public ./public
 
 USER nodejs
 

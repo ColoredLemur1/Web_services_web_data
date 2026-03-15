@@ -16,6 +16,7 @@ module.exports = {
     { name: 'Lookups', description: 'Reference data for filters and dropdowns' },
     { name: 'Housing & rental data', description: 'Time-series and filtered datasets' },
     { name: 'Affordability', description: 'Affordability metrics and index' },
+    { name: 'AI insights', description: 'LLM-generated market analysis (deployer-configured Gemini; no consumer API key)' },
     { name: 'Health', description: 'API health check' },
   ],
   components: {
@@ -141,6 +142,47 @@ module.exports = {
           message: { type: 'string', description: 'Success message' },
           timestamp: { type: 'string', description: 'Server timestamp from the database' },
           data: { type: 'array', description: 'Empty array (reserved for future use)' },
+        },
+      },
+      MarketSummarySuccess: {
+        type: 'object',
+        description: 'Response from GET /api/analysis/market-summary or GET /api/analysis/{region_id}. Expert market analysis: LLM-generated 150-word executive summary grounded in HPI, rental, and affordability data.',
+        properties: {
+          region: {
+            type: 'object',
+            description: 'The region the summary is for',
+            properties: {
+              id: { type: 'integer' },
+              name: { type: 'string' },
+              gss_code: { type: 'string', nullable: true },
+            },
+          },
+          summary: { type: 'string', description: 'AI-generated executive summary on market health (~150 words)' },
+          data_snapshot: {
+            type: 'object',
+            description: 'Latest data fed to the LLM (rental, HPI last 6 months, price-to-income ratio)',
+            properties: {
+              region_name: { type: 'string' },
+              latest_rent_period: { type: 'string' },
+              monthly_rent_gbp: { type: 'number' },
+              annual_rent_gbp: { type: 'number' },
+              rent_annual_change_pct: { type: 'number', nullable: true },
+              implied_avg_borrower_income_gbp: { type: 'number', nullable: true },
+              implied_income_year: { type: 'string', nullable: true },
+              avg_house_price_gbp: { type: 'number', nullable: true, description: 'Latest HPI average house price (All property types)' },
+              house_price_period: { type: 'string', nullable: true },
+              house_price_annual_change_pct: { type: 'number', nullable: true },
+              hpi_months_included: { type: 'integer', description: 'Number of HPI periods used (up to 6)' },
+              price_to_income_ratio: { type: 'number', nullable: true, description: 'From affordability_metrics (All dwellings)' },
+              price_to_income_period: { type: 'string', nullable: true },
+              user_salary_gbp: { type: 'number', nullable: true, description: 'Present when salary query param was provided' },
+              rent_to_salary_pct: { type: 'number', nullable: true, description: 'Annual rent as % of user salary when salary provided' },
+              focus: { type: 'string', nullable: true, enum: ['first_time_buyer', 'investor', 'rent_vs_buy'], description: 'Present when focus query param was provided' },
+              property_type_id: { type: 'integer', nullable: true, description: 'Present when property_type_id query param was provided' },
+              property_type_name: { type: 'string', nullable: true, description: 'Name of property type when property_type_id provided' },
+            },
+          },
+          generated_at: { type: 'string', format: 'date-time', description: 'ISO timestamp when the summary was generated' },
         },
       },
     },
@@ -444,6 +486,57 @@ module.exports = {
             description: 'Internal Server Error',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
           },
+        },
+      },
+    },
+    '/api/analysis/market-summary': {
+      get: {
+        tags: ['AI insights'],
+        summary: 'Market summary by query (LLM)',
+        description:
+          'Expert market analysis: retrieves latest rental, last 6 months HPI, and price-to-income ratio for the region, feeds them to Gemini, and returns a 150-word executive summary. Optional tailoring: salary (personalise rent affordability), focus (first_time_buyer / investor / rent_vs_buy), property_type_id (HPI for that property type). Region: region_id or region_name (default United Kingdom). Deployer sets GEMINI_API_KEY.',
+        parameters: [
+          { name: 'region_id', in: 'query', required: false, schema: { type: 'integer' }, description: 'Region ID (optional).' },
+          { name: 'region_name', in: 'query', required: false, schema: { type: 'string', example: 'United Kingdom' }, description: 'Region name (optional). Used if region_id not set; defaults to United Kingdom.' },
+          { name: 'salary', in: 'query', required: false, schema: { type: 'number', example: 35000 }, description: 'User annual salary in GBP. Tailors summary with rent-as-%-of-salary and affordability angle.' },
+          { name: 'focus', in: 'query', required: false, schema: { type: 'string', enum: ['first_time_buyer', 'investor', 'rent_vs_buy'] }, description: 'Scenario focus: first-time buyer affordability, investor outlook, or rent vs buy.' },
+          { name: 'property_type_id', in: 'query', required: false, schema: { type: 'integer' }, description: 'Property type ID for HPI data (e.g. Detached, All property types). Use GET /api/property-types for IDs.' },
+        ],
+        responses: {
+          '200': {
+            description: 'Success. Returns region, summary, data_snapshot (includes user inputs when provided), generated_at.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/MarketSummarySuccess' } } },
+          },
+          '400': { description: 'Bad Request (e.g. invalid property_type_id)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '404': { description: 'Region or rental metrics not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '502': { description: 'AI service error or empty response', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '503': { description: 'AI insights not configured (GEMINI_API_KEY not set)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '500': { description: 'Internal Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+        },
+      },
+    },
+    '/api/analysis/{region_id}': {
+      get: {
+        tags: ['AI insights'],
+        summary: 'Market summary by region ID (LLM)',
+        description:
+          'Same as GET /api/analysis/market-summary but with region_id in the path. Optional query params: salary, focus, property_type_id for user-tailored analysis.',
+        parameters: [
+          { name: 'region_id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Region ID.' },
+          { name: 'salary', in: 'query', required: false, schema: { type: 'number', example: 35000 }, description: 'User annual salary in GBP. Tailors summary with rent-as-%-of-salary.' },
+          { name: 'focus', in: 'query', required: false, schema: { type: 'string', enum: ['first_time_buyer', 'investor', 'rent_vs_buy'] }, description: 'Scenario: first_time_buyer, investor, or rent_vs_buy.' },
+          { name: 'property_type_id', in: 'query', required: false, schema: { type: 'integer' }, description: 'Property type ID for HPI data. Use GET /api/property-types.' },
+        ],
+        responses: {
+          '200': {
+            description: 'Success. Returns region, summary, data_snapshot, generated_at.',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/MarketSummarySuccess' } } },
+          },
+          '400': { description: 'Bad Request (e.g. invalid property_type_id)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '404': { description: 'Region or rental metrics not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '502': { description: 'AI service error or empty response', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '503': { description: 'AI insights not configured (GEMINI_API_KEY not set)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          '500': { description: 'Internal Server Error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
         },
       },
     },

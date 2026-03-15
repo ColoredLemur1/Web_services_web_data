@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register – UK Housing API</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 400px; margin: 3rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    label { display: block; margin-top: 0.75rem; }
+    input { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+    button { margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer; }
+    .error { color: #c00; margin-top: 0.5rem; }
+    a { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <h1>Register</h1>
+  <p><a href="/">Home</a> · <a href="/login.html">Log in</a></p>
+  <form method="post" action="/auth/register">
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" required autocomplete="email">
+    <label for="password">Password (min 8 characters)</label>
+    <input type="password" id="password" name="password" required minlength="8" autocomplete="new-password">
+    <button type="submit">Register</button>
+  </form>
+  <p id="error" class="error"></p>
+  <script>
+    var m = new URLSearchParams(window.location.search).get('error');
+    if (m === 'exists') document.getElementById('error').textContent = 'An account with this email already exists.';
+  </script>
+</body>
+</html>
