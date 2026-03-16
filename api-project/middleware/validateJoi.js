@@ -1,15 +1,9 @@
 /**
- * Express middleware: validate req.body, req.query, or req.params with a Joi schema.
- * On failure passes next(createError(400, message)); on success assigns validated (and coerced) value back and calls next().
+ * Validates request body, query or params with a Joi schema. On failure returns 400. On success assigns validated value and calls next.
  */
 
 const { createError } = require('./errorHandler');
 
-/**
- * @param {import('joi').ObjectSchema} schema - Joi schema (object)
- * @param {'body'|'query'|'params'} source - which part of req to validate
- * @returns {function} Express middleware
- */
 function validateJoi(schema, source = 'body') {
   return (req, res, next) => {
     const value = req[source];

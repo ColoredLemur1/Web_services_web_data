@@ -1,15 +1,10 @@
 /**
- * Compute an implied average borrower income for the United Kingdom
- * by combining:
- * - table28.csv (average price All dwellings)
- * - table30.csv (price/income ratio All dwellings)
+ * Compute implied average borrower income for the United Kingdom from ONS tables 28 and 30.
  *
- * For each year where both are available, income ≈ price / (price_income_ratio).
- * We then pick the latest year and write that income into regions.implied_avg_borrower_income
- * and regions.implied_income_year for the UK region (gss_code K02000001).
- *
- * Run from api-project root:
+ * Run from api project root:
  *   node scripts/compute-implied-income.js
+ *
+ * Reads CSV data, computes income, and updates the database with the latest year and income.
  */
 
 const fs = require('fs');

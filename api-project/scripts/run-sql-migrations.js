@@ -1,6 +1,8 @@
 /**
- * Run all SQL migration files in scripts/sql/ in filename order.
- * Uses same DB config as the app (.env). Run from api-project root: node scripts/run-sql-migrations.js
+ * Runs all SQL migration files in scripts/sql in filename order. Uses same DB config as the app.
+ *
+ * Run from api project root:
+ *   node scripts/run-sql-migrations.js
  */
 
 const fs = require('fs');

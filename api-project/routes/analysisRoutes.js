@@ -1,3 +1,7 @@
+/**
+ * Analysis routes. Market summary with optional region and query params.
+ */
+
 const express = require('express');
 const router = express.Router();
 const analysisController = require('../controllers/analysisController');

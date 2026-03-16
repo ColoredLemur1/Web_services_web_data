@@ -1,11 +1,14 @@
+/**
+ * Housing and lookup endpoints. Serves regions, property types, buyer dwelling categories, housing sales, affordability and rental metrics.
+ */
+
 const pool = require('../config/db');
 const { createError } = require('../middleware/errorHandler');
-// Query/body validation is done by Joi in routes (middleware/validateJoi + middleware/schemas).
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 500;
 
-/** Parse limit and offset from query; enforce defaults and max. */
+/** Parse limit and offset from query and enforce defaults and max. */
 function parseLimitOffset(query) {
   let limit = parseInt(query.limit, 10);
   let offset = parseInt(query.offset, 10);
@@ -15,10 +18,7 @@ function parseLimitOffset(query) {
   return { limit, offset };
 }
 
-/**
- * GET housing_sales_data with JOINs to regions and property_types.
- * Query params: region_id, region_name, year, period_from, period_to, property_type_id, is_new_build, min_price, max_price, limit, offset.
- */
+/** GET housing sales data with joins to regions and property types. */
 const getHousingSales = async (req, res, next) => {
   try {
     const {
@@ -126,10 +126,7 @@ const getHousingSales = async (req, res, next) => {
   }
 };
 
-/**
- * GET housing_sales_by_buyer_dwelling with JOINs to regions and buyer_dwelling_categories.
- * Query params: region_id, region_name, year, period_from, period_to, category_id, min_price, max_price, limit, offset.
- */
+/** GET housing sales by buyer dwelling with joins to regions and categories. */
 const getHousingSalesByBuyerDwelling = async (req, res, next) => {
   try {
     const {
@@ -227,10 +224,7 @@ const getHousingSalesByBuyerDwelling = async (req, res, next) => {
   }
 };
 
-/**
- * GET affordability_metrics with JOINs to regions and buyer_dwelling_categories.
- * Query params: region_id, region_name, year, period_from, period_to, category_id, limit, offset.
- */
+/** GET affordability metrics with joins to regions and buyer dwelling categories. */
 const getAffordabilityMetrics = async (req, res, next) => {
   try {
     const {
@@ -311,10 +305,7 @@ const getAffordabilityMetrics = async (req, res, next) => {
   }
 };
 
-/**
- * GET rental_metrics with JOIN to regions.
- * Query params: region_id, region_name, year, period_from, period_to, min_rent, max_rent, limit, offset.
- */
+/** GET rental metrics with join to regions. */
 const getRentalMetrics = async (req, res, next) => {
   try {
     const {
@@ -411,9 +402,7 @@ const getRentalMetrics = async (req, res, next) => {
   }
 };
 
-/**
- * GET regions list (for dropdowns / filtering).
- */
+/** GET list of regions for dropdowns and filtering. */
 const getRegions = async (req, res, next) => {
   try {
     const result = await pool.query(
@@ -425,10 +414,7 @@ const getRegions = async (req, res, next) => {
   }
 };
 
-/**
- * POST /api/regions - Create a region (admin, requires API key).
- * Body: { name (required), gss_code (optional) }
- */
+/** Create a region. Requires API key. */
 const createRegion = async (req, res, next) => {
   try {
     const { name, gss_code } = req.body;
@@ -443,10 +429,7 @@ const createRegion = async (req, res, next) => {
   }
 };
 
-/**
- * PUT /api/regions/:id - Update a region (admin, requires API key).
- * Body: { name (optional), gss_code (optional) }; at least one required.
- */
+/** Update a region by id. Requires API key. At least one of name or gss code required. */
 const updateRegion = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -469,10 +452,7 @@ const updateRegion = async (req, res, next) => {
   }
 };
 
-/**
- * DELETE /api/regions/:id - Delete a region (admin, requires API key).
- * Cascades to related housing_sales_data, rental_metrics, etc.
- */
+/** Delete a region by id. Requires API key. Cascades to related data. */
 const deleteRegion = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -484,9 +464,7 @@ const deleteRegion = async (req, res, next) => {
   }
 };
 
-/**
- * GET property_types list (for filtering housing_sales_data).
- */
+/** GET list of property types for filtering housing sales. */
 const getPropertyTypes = async (req, res, next) => {
   try {
     const result = await pool.query('SELECT id, type_name FROM property_types ORDER BY id');
@@ -496,9 +474,7 @@ const getPropertyTypes = async (req, res, next) => {
   }
 };
 
-/**
- * GET buyer_dwelling_categories list (for filtering buyer-dwelling and affordability).
- */
+/** GET list of buyer dwelling categories for filtering. */
 const getBuyerDwellingCategories = async (req, res, next) => {
   try {
     const result = await pool.query('SELECT id, name FROM buyer_dwelling_categories ORDER BY id');
@@ -508,22 +484,11 @@ const getBuyerDwellingCategories = async (req, res, next) => {
   }
 };
 
-/**
- * Affordability Index endpoint.
- * Takes a user's annual salary and compares it against:
- * - region.avg_annual_income
- * - latest rental_metrics.rental_price_all for that region (monthly average rent)
- *
- * Query params:
- * - salary (required, annual, positive number)
- * - region_id (optional)
- * - region_name (optional, used if region_id not provided; defaults to 'United Kingdom' if neither set)
- */
+/** Compares salary to region income and latest rent. Returns Affordable, Stretched or Unaffordable. */
 const getAffordabilityIndex = async (req, res, next) => {
   try {
     const { salary: salaryNum, region_id, region_name } = req.query;
 
-    // Resolve region
     let regionRow;
     if (region_id) {
       const regionRes = await pool.query(
@@ -551,7 +516,6 @@ const getAffordabilityIndex = async (req, res, next) => {
 
     const regionId = regionRow.id;
 
-    // Get latest rental metrics for this region
     const rentRes = await pool.query(
       `SELECT period, rental_price_all
        FROM rental_metrics

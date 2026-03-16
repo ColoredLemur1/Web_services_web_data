@@ -1,6 +1,5 @@
 /**
- * Input validation for query parameters. Returns an error message string or null if valid.
- * Used by controllers before running queries; on non-null return, controller should next(createError(400, message)).
+ * Query parameter validation. Returns an error message string or null if valid. Controllers call next(createError(400, message)) when non null.
  */
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -37,7 +36,7 @@ function parseDate(val, name) {
   return null;
 }
 
-/** Validation for housing-sales, housing-sales-by-buyer, affordability (GET), rental-metrics query params */
+/** Validates list endpoint query params. */
 function validateListQuery(query, options = {}) {
   const { allowMinMaxPrice = false, allowMinMaxRent = false } = options;
 
@@ -111,7 +110,7 @@ function validateListQuery(query, options = {}) {
   return null;
 }
 
-/** Validation for affordability-index: salary required, positive number */
+/** Validates affordability index query. Salary required and must be positive. */
 function validateAffordabilityIndexQuery(query) {
   if (query.salary === undefined || query.salary === '') {
     return 'salary query parameter is required';

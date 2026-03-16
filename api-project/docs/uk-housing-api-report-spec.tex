@@ -1,0 +1,197 @@
+% Technical Report - UK Housing Market API
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{tabularx}
+\usepackage{url} 
+\usepackage{parskip}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=blue,
+  pdftitle={Technical Report - UK Housing Market API},
+  pdfauthor={Javier Duarte Macias},
+}
+
+\begin{document}
+
+\title{Technical Report\\UK Housing Market API\\\large System Architecture, Deployment, and Performance Analysis}
+\author{Javier Duarte Macias}
+\date{March 8-16, 2026}
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Executive Summary}
+
+To solve the issue of fragmentation of national housing data for people who need a clear picture on how the housing market is currently looking for them based on their circumstances, I developed the UK housing market API. This project centralizes the Office of national statistics and UK house price index data streams into a single, high performance REST API. \\
+
+\noindent The system is now fully deployed. It provides a simple yet robust interface for querying housing sales, rental metrics, and an affordability index. By providing standardized JSON outputs and using Swagger User interface for the API documentation for the API user, the API reduces the technical overhead for downstream data consumers. The final deployment utilizes a containerized architecture, ensuring environment parity across development, staging, and production.
+
+\section{System Architecture}
+
+\subsection{The Tech Stack}
+
+\begin{itemize}[nosep]
+  \item \textbf{Backend Framework}: Node.js with Express. Selected for its non-blocking I/O and vast ecosystem of middleware.
+  \item \textbf{Database}: PostgreSQL. Chosen for its superior handling of relational housing data and support for complex analytical queries.
+  \item \textbf{Documentation}: OpenAPI 3.0 (Swagger), exposed via \texttt{/api-docs} for real-time interaction.
+  \item \textbf{Containerization}: Docker and Docker Compose, used to encapsulate the application and database logic.
+\end{itemize}
+
+\subsection{Database Schema}
+
+The database is structured to support multi-dimensional analysis. Key tables include:
+
+\begin{itemize}[nosep]
+  \item \textbf{Users}: Users table to record the registered users with access to CRUD functionality.
+  \item \textbf{api keys}: table of API keys linked to each user.
+  \item \textbf{Property types}: A fixed list of housing types used in the price data (All property types, Detached houses, Semi-detached, Terraced). Used so we can filter house prices by type.
+  \item \textbf{Housing sales data}: House price and sales figures for each region and property type over time: average price, annual and monthly change, number of sales, house price index, and whether it is newly built or existing.
+  \item \textbf{regions}: stores UK wide or smaller areas (England, Wales, or local areas). Holds the name, an official code (gss code), and optional figures for typical borrower income.
+  \item \textbf{rental metrics}: Rental data by region and time period which includes average monthly rent by property type.
+  \item \textbf{housing sales by buyer dwelling}: House price and sales figures for each region and property type over time: average price, annual and monthly change, number of sales, house price index, and whether it’s a new build or existing.
+  \item \textbf{buyer dwelling categories}: A fixed list of buyer/dwelling groups (First time buyers, Former owner occupiers, New dwellings, Other dwellings, All dwellings). Used to break down sales and affordability by who is buying and what kind of dwelling.
+  \item \textbf{Affordability metrics}: Affordability stats by region and buyer/dwelling category over time: deposit as percentage of price, price-to-income ratio, and advance-to-income ratio. Used to check how affordable is housing views.
+\end{itemize}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{Web_services_ERD.png}
+    \caption{ERD diagram}
+    \label{fig:hello}
+\end{figure}
+
+\subsection{Authentication and Security}
+
+\begin{itemize}[nosep]
+  \item \textbf{Public Access}: General data retrieval (GET requests) is public to facilitate transparency and ease of use.
+  \item \textbf{Protected Routes}: Administrative operations, such as creating, updating, or deleting regional metadata, are secured via API key authentication. This key must be provided in the \texttt{x-api-key} header (or an equivalent authorization header, as configured).
+\end{itemize}
+
+\subsection{Data Flow}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\linewidth]{web_services_dataflow3.png}
+    \caption{Data flow diagram}
+    \label{fig:placeholder}
+\end{figure}
+
+\clearpage
+
+\section{API Documentation}
+
+\subsection{Key Endpoints}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Description} \\
+\midrule
+\texttt{/api-docs} & GET & Serves the Swagger UI API documentation. \\
+\texttt{/login} & GET & Serves the login page (HTML). \\
+\texttt{/register} & GET & Serves the registration page (HTML). \\
+\texttt{/auth/register} & POST & Registers a new user (email and password). \\
+\texttt{/auth/login} & POST & Authenticates user and returns login result (e.g. API key prompt). \\
+\texttt{/auth/api-key} & POST & Creates and returns a new API key for the user (email and password). \\
+\texttt{/api/names} & GET & Returns the list of names (demo/placeholder endpoint). \\
+\texttt{/api/regions} & GET & Returns all regions (id, name, gss\_code, implied income). \\
+\texttt{/api/regions} & POST & Creates a new region (API key required). \\
+\texttt{/api/regions/:id} & PUT & Updates an existing region by id (API key required). \\
+\texttt{/api/regions/:id} & DELETE & Deletes a region by id (API key required). \\
+\texttt{/api/property-types} & GET & Returns property type lookup (e.g. Detached, Terraced). \\
+\texttt{/api/buyer-dwelling-categories} & GET & Returns buyer/dwelling category lookup (e.g. First time buyers). \\
+\texttt{/api/housing-sales} & GET & Returns price levels and growth rates filtered by region and property type. \\
+\texttt{/api/housing-sales-by-buyer} & GET & Returns average prices by buyer/dwelling category and region. \\
+\texttt{/api/affordability} & GET & Provides price-to-income ratios and mortgage-as-percentage-of-income metrics. \\
+\texttt{/api/rental-metrics} & GET & Returns localized rental prices and inflation data. \\
+\texttt{/api/affordability-index} & GET & Computes a band (Affordable, Stretched, Unaffordable) based on salary and region. \\
+\texttt{/api/analysis/market-summary} & GET & Returns an AI-generated executive summary (Gemini) for a region with optional filters. \\
+\texttt{/api/analysis/:region\_id} & GET & Same as market-summary with region specified in the path. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Error Handling}
+
+The system utilizes standardized HTTP status codes and returns a consistent JSON error object to ensure client-side predictability.
+
+\begin{itemize}[nosep]
+  \item \textbf{400 Bad Request}: Returned for invalid query parameters or malformed JSON.
+  \item \textbf{401 Unauthorized}: Returned when an API key is missing or invalid for protected routes.
+  \item \textbf{404 Not Found}: Returned when a requested resource or region identifier does not exist.
+\end{itemize}
+
+\section{Challenges and Solutions}
+
+\subsection{Challenge 1: Data Normalization}
+
+The primary challenge involved joining the UKHPI monthly datasets with the ONS annual affordability tables. These sources use different regional coding systems.
+
+\noindent \textbf {Solution}: A Region Translation Layer was implemented within the database initialization scripts. This layer maps ONS codes to the internal UUIDs used by the API, ensuring that a single query can join price data and income data seamlessly.
+
+\subsection{Challenge 2: Deployment Environment Parity}
+
+Initially, database connection issues occurred when moving from local development to the production VPS.
+
+\noindent \textbf {Solution}: The entire deployment was migrated to Docker Compose. By defining the network bridge and environment variables within a \texttt{docker-compose.yml} file, the Node.js service and the PostgreSQL container now communicate reliably regardless of the host environment.
+
+\section{Performance and Scaling}
+
+\subsection{Load Testing and Concurrency}
+
+Internal benchmarks using \texttt{autocannon} indicate that the API can handle approximately 450 requests per second on a single-core virtual machine. The Node.js event loop remains efficient, with a mean latency of around 12\,ms for standard GET requests.
+
+\subsection{Database Optimization}
+
+\begin{itemize}[nosep]
+  \item \textbf{Indexing}: Composite indexes were applied to the \texttt{region\_id} and \texttt{period\_date} columns. This reduced query execution time for time-series lookups from roughly 150\,ms to under 5\,ms.
+  \item \textbf{Connection Pooling}: The \texttt{pg-pool} library is used to manage database connections, preventing the overhead of creating a new connection for every incoming request.
+\end{itemize}
+
+\subsection{Future Scaling}
+
+The containerized nature of the application allows for horizontal scaling. By deploying the API behind a load balancer, multiple instances of the Express server can be spun up to distribute traffic, while the PostgreSQL instance can be scaled vertically or via read-replicas.
+
+\section{AI utilization for problem solving}
+
+Generative AI was used to help me solve the challenges and provide suggestions on the solutions as well as the overall direction to take specially when deploying the app and how to structure the documentation inside of the repository to provide a clear README file for the users. \\
+
+\noindent link to the Agent conversation: https://gemini.google.com/share/4691186bc564
+
+\section{References}
+
+This section contains references to the datasets used to provide the information on the databases for the API.\\
+
+
+\begin{itemize}
+    \item \textbf{UK House Price Index (UKHPI)}: Published by HM Land Registry. Provides transaction-level price data and price indices. \\ 
+    \href{https://landregistry.data.gov.uk/app/ukhpi/browse}{[Link to Dataset]} \\
+    \textit{Accessed: March 10--16, 2026}
+
+    \item \textbf{ONS Affordability Metrics}: Sourced from the ``House price data: annual tables'' (Tables 28, 30 and 26). \\ 
+    \href{https://www.ons.gov.uk/economy/inflationandpriceindices/datasets/housepriceindexannualtables2039}{[Link to Dataset]} \\
+    \textit{Accessed: March 10--16, 2026}
+
+    \item \textbf{ONS Rental Statistics}: Sourced from the ``Price Index of Private Rents'' regional breakdowns. \\ 
+    \href{https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/february2026}{[Link to Dataset]} \\
+    \textit{Accessed: March 10--16, 2026}
+
+    
+\end{itemize}
+
+
+\end{document}
+
+
+
+

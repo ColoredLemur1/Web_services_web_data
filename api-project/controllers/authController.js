@@ -1,7 +1,5 @@
 /**
- * Auth: register, login, create API key. No sessions.
- * Register → redirect to login. Login → verify; show API key in HTML (generate if first time).
- * POST /auth/api-key with email+password → verify, generate new key, show in HTML.
+ * Auth: register, login, create API key. No sessions. Register shows key page. Login shows key or regenerate form.
  */
 
 const crypto = require('crypto');
@@ -34,32 +32,40 @@ function renderKeyPage(apiKeyBlock) {
   return html;
 }
 
-/**
- * POST /auth/register - body: { email, password }
- * Creates user, redirects to /login?registered=1 (no session).
- */
+/** Creates user and API key, then shows key page. */
 async function register(req, res, next) {
   const { email, password } = req.body;
   const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
+  let userId;
+  let userEmail;
   try {
-    await pool.query(
+    const ins = await pool.query(
       'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email',
-      [email, password_hash]
+      [email.trim().toLowerCase(), password_hash]
     );
+    userId = ins.rows[0].id;
+    userEmail = ins.rows[0].email;
   } catch (err) {
     if (err.code === '23505') {
       return res.redirect(302, '/register.html?error=exists');
     }
     return next(err);
   }
-  res.redirect(302, '/login?registered=1');
+
+  const rawKey = generateApiKey();
+  const keyHash = hashKey(rawKey);
+  try {
+    await pool.query('INSERT INTO api_keys (user_id, key_hash) VALUES ($1, $2)', [userId, keyHash]);
+  } catch (err) {
+    return next(err);
+  }
+
+  const block = '<p>Copy your API key and use it in your code when calling the API (e.g. <code>X-API-Key</code> header).</p><pre id="apikey">' + escapeHtml(rawKey) + '</pre><button type="button" onclick="navigator.clipboard.writeText(document.getElementById(\'apikey\').textContent)">Copy</button>';
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  return res.send(renderKeyPage(block));
 }
 
-/**
- * POST /auth/login - body: { email, password }
- * Verifies credentials. If no API key for user: generate one and show in HTML.
- * If user already has a key: show HTML with form to regenerate (POST /auth/api-key with email+password).
- */
+/** Verifies credentials. Generates and shows API key if first time; otherwise shows form to regenerate key. */
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
@@ -87,10 +93,7 @@ async function login(req, res, next) {
   }
 }
 
-/**
- * POST /auth/api-key - body: { email, password }
- * Verifies credentials, deletes existing key, creates new one, returns HTML with new key.
- */
+/** Verifies credentials, replaces existing key with a new one, returns HTML with new key. */
 async function createApiKey(req, res, next) {
   try {
     const { email, password } = req.body;

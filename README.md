@@ -135,7 +135,6 @@ Once the server is running, the API is available at your configured base URL. In
 To build the API image (from `api-project/`):
 
 ```bash
-cd api-project
 docker build -t uk-housing-api .
 ```
 

@@ -1,6 +1,5 @@
 /**
- * OpenAPI 3.0 spec for UK Housing Market API.
- * Served at /api-docs via swagger-ui-express.
+ * OpenAPI 3 spec for UK Housing Market API. Served at api docs.
  */
 
 module.exports = {

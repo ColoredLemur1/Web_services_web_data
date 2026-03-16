@@ -1,7 +1,8 @@
 /**
- * Seed affordability_metrics from table30.csv (price/income and advance/income ratios).
- * Requires: regions (with id), buyer_dwelling_categories, affordability_metrics.
- * Run from api-project root: node scripts/seed-affordability-metrics.js
+ * Seeds affordability metrics from table30.csv. Requires regions, buyer dwelling categories and affordability metrics table.
+ *
+ * Run from api project root:
+ *   node scripts/seed-affordability-metrics.js
  */
 
 const fs = require('fs');

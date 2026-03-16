@@ -1,15 +1,12 @@
 /**
- * Expert Market Analysis: Gemini-powered endpoint that feeds PostgreSQL (HPI, rental,
- * affordability) data to the LLM to produce a grounded executive summary. GET only.
+ * Market summary endpoint. Fetches rental, HPI and affordability from the database and sends a prompt to Gemini for an executive summary.
  */
 
 const pool = require('../config/db');
 const { createError } = require('../middleware/errorHandler');
 const { getGeminiModel, isGeminiConfigured } = require('../config/gemini');
 
-/**
- * Resolve region by id or name (default United Kingdom). Returns region row or null.
- */
+/** Resolve region by id or name. Defaults to United Kingdom. */
 async function resolveRegion(region_id, region_name) {
   if (region_id) {
     const res = await pool.query(
@@ -26,11 +23,7 @@ async function resolveRegion(region_id, region_name) {
   return res.rows[0] || null;
 }
 
-/**
- * GET /api/analysis/market-summary or GET /api/analysis/:region_id
- * Data retrieval: latest rental, last 6 months HPI (house prices), latest price-to-income ratio.
- * Prompt: UK Real Estate Analyst; 150-word executive summary on market health from these numbers.
- */
+/** Returns latest rental, last six months HPI and price to income ratio, then Gemini summary. */
 const getMarketSummary = async (req, res, next) => {
   try {
     if (!isGeminiConfigured()) {

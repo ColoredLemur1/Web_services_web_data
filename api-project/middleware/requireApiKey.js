@@ -1,3 +1,7 @@
+/**
+ * Requires a valid API key for POST, PUT, PATCH and DELETE. Accepts env API key or key from api keys table.
+ */
+
 const crypto = require('crypto');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
@@ -11,11 +15,6 @@ function hashKey(rawKey) {
   return crypto.createHash('sha256').update(rawKey, 'utf8').digest('hex');
 }
 
-/**
- * Require a valid API key for POST, PUT, PATCH, DELETE.
- * Key can be: (1) process.env.API_KEY (legacy), or (2) a key from api_keys table (hash lookup).
- * Header: X-API-Key or Authorization: Bearer <key>.
- */
 async function requireApiKey(req, res, next) {
   if (!PROTECTED_METHODS.includes(req.method)) {
     return next();

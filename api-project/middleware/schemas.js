@@ -1,6 +1,5 @@
 /**
- * Joi validation schemas for request body, query, and params.
- * Used by validateJoi middleware to harden endpoints and prevent invalid input.
+ * Joi schemas for request body, query and params. Used by validateJoi middleware.
  */
 
 const Joi = require('joi');
@@ -13,7 +12,7 @@ const nonNegativeInt = Joi.number().integer().min(0);
 const yearSchema = Joi.number().integer().min(1900).max(2100);
 const dateSchema = Joi.string().pattern(DATE_PATTERN).message('must be YYYY-MM-DD');
 
-// ----- Regions (POST /api/regions, PUT /api/regions/:id) -----
+// Regions
 
 const regionCreateBody = Joi.object({
   name: Joi.string().trim().min(1).max(255).required()
@@ -36,7 +35,7 @@ const regionIdParam = Joi.object({
     .messages({ 'number.min': 'id must be a positive integer' }),
 });
 
-// ----- Affordability index (GET /api/affordability-index) -----
+// Affordability index
 
 const affordabilityIndexQuery = Joi.object({
   salary: Joi.number().positive().required()
@@ -48,7 +47,7 @@ const affordabilityIndexQuery = Joi.object({
   region_name: Joi.string().trim().max(255).optional().allow(''),
 }).required();
 
-// ----- Market summary (GET /api/analysis/market-summary, GET /api/analysis/:region_id) -----
+// Market summary
 
 const focusEnum = ['first_time_buyer', 'investor', 'rent_vs_buy'];
 
@@ -68,7 +67,7 @@ const analysisRegionIdParam = Joi.object({
     .messages({ 'number.min': 'region_id must be a positive integer' }),
 }).required();
 
-// ----- List endpoints: shared query shape -----
+// List endpoints shared query
 
 const baseListQuery = {
   limit: nonNegativeInt.optional(),
@@ -106,7 +105,7 @@ const rentalMetricsQuery = Joi.object({
   max_rent: Joi.number().min(0).optional(),
 }).required();
 
-// ----- Auth (POST /auth/register, POST /auth/login) -----
+// Auth
 
 const authRegisterBody = Joi.object({
   email: Joi.string().email().trim().lowercase().required()

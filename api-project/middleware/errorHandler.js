@@ -1,6 +1,5 @@
 /**
- * HTTP error helper and global error middleware.
- * Controllers can call next(createError(400, 'message')) to return 400/404/409 etc.
+ * Error helper and global handler. Controllers use next(createError(400, 'message')). Response is JSON with error and message.
  */
 
 function createError(statusCode, message) {
@@ -9,11 +8,6 @@ function createError(statusCode, message) {
   return err;
 }
 
-/**
- * Global error handler. Must be registered after all routes.
- * Sends consistent JSON: { error: <status label>, message: <string> }
- * Uses err.statusCode or 500. Does not leak stack traces to the client.
- */
 function globalErrorHandler(err, req, res, next) {
   const statusCode = err.statusCode || err.status || 500;
   const message = err.message || 'Internal server error';
@@ -47,9 +41,6 @@ function globalErrorHandler(err, req, res, next) {
   });
 }
 
-/**
- * 404 for unmatched routes. Sends JSON and forwards to error handler.
- */
 function notFoundHandler(req, res, next) {
   next(createError(404, `Cannot ${req.method} ${req.originalUrl || req.path}`));
 }

@@ -1,8 +1,8 @@
 /**
- * Seed housing_sales_data from UKHPI CSV files.
- * Uses ukhpi-united-kingdom-from-2025-02-01-to-2026-02-01.csv (full HPI + property types + new build/existing).
- * Requires: regions table, property_types table, housing_sales_data table.
- * Run from api-project root: node scripts/seed-housing-sales-data.js
+ * Seeds housing sales data from UKHPI CSV. Requires regions, property types and housing sales data table.
+ *
+ * Run from api project root:
+ *   node scripts/seed-housing-sales-data.js
  */
 
 const fs = require('fs');

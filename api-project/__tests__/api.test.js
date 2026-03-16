@@ -1,7 +1,5 @@
 /**
- * Automated API tests: status codes, affordability index, regions CRUD, auth.
- * Uses Supertest against the exported Express app; no real server port.
- * Requires Postgres. CRUD tests use API_KEY from .env or a DB-created test user key.
+ * API tests. Status codes, affordability index, regions CRUD and auth. Uses Supertest. Requires Postgres.
  */
 const crypto = require('crypto');
 const request = require('supertest');

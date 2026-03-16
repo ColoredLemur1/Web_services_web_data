@@ -1,8 +1,8 @@
 /**
- * Seed property_types lookup table used by housing_sales_data (UKHPI).
- * Inserts the five UKHPI property types if not present. Idempotent.
- * Requires: property_types table.
- * Run from api-project root: node scripts/seed-property-types.js
+ * Seeds property types lookup table. Inserts the five UKHPI property types if not present. Idempotent.
+ *
+ * Run from api project root:
+ *   node scripts/seed-property-types.js
  */
 
 const path = require('path');

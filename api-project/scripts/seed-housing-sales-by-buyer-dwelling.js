@@ -1,7 +1,8 @@
 /**
- * Seed housing_sales_by_buyer_dwelling from table28.csv (Table 23: prices by new/other dwellings and buyer type).
- * Requires: regions (with id), buyer_dwelling_categories, housing_sales_by_buyer_dwelling.
- * Run from api-project root: node scripts/seed-housing-sales-by-buyer-dwelling.js
+ * Seeds housing sales by buyer dwelling from table28.csv. Requires regions, buyer dwelling categories and target table.
+ *
+ * Run from api project root:
+ *   node scripts/seed-housing-sales-by-buyer-dwelling.js
  */
 
 const fs = require('fs');

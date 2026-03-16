@@ -1,7 +1,8 @@
 /**
- * Seed rental_metrics from rent.csv (core + granular rent metrics).
- * Requires: regions (with gss_code for Area code lookup), rental_metrics.
- * Run from api-project root: node scripts/seed-rental-metrics.js
+ * Seeds rental metrics from rent.csv. Requires regions and rental metrics table.
+ *
+ * Run from api project root:
+ *   node scripts/seed-rental-metrics.js
  */
 
 const fs = require('fs');

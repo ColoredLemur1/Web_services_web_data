@@ -1,9 +1,8 @@
 /**
- * Seed base regions required by other seeds and the API.
- * Creates "United Kingdom" with gss_code K02000001 if not present.
- * Idempotent: safe to run after migrations on a fresh deploy.
- * Requires: regions table.
- * Run from api-project root: node scripts/seed-regions.js
+ * Seeds base regions. Creates United Kingdom with gss code K02000001 if not present. Idempotent.
+ *
+ * Run from api project root:
+ *   node scripts/seed-regions.js
  */
 
 const path = require('path');
