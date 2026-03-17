@@ -130,7 +130,7 @@ module.exports = {
               rent_to_region_income_percent: { type: 'number', nullable: true, description: 'Rent as % of implied regional income; null if no implied income' },
             },
           },
-          health_score: { type: 'string', enum: ['Affordable', 'Stretched', 'Unaffordable'], description: '≤25% Affordable; ≤40% Stretched; >40% Unaffordable' },
+          health_score: { type: 'string', enum: ['Affordable', 'Stretched', 'Unaffordable'], description: '≤30% Affordable; ≤40% Stretched; >40% Unaffordable' },
           health_explanation: { type: 'string', description: 'Human-readable explanation of the result' },
         },
       },
@@ -436,7 +436,7 @@ module.exports = {
         tags: ['Affordability'],
         summary: 'Affordability index (salary vs rent)',
         description:
-          'Calculates housing affordability based on ONS and HPI benchmarks. Compares your annual salary to the latest regional average rent and to the implied borrower income for the region. Returns a health score (Affordable / Stretched / Unaffordable) and rent-to-salary ratios. Uses the latest rental_metrics.rental_price_all and regions.implied_avg_borrower_income for the chosen region.',
+          'Compares your annual salary to the latest regional average rent and implied borrower income. Returns rent-to-salary ratios and a health score (Affordable ≤30%, Stretched ≤40%, Unaffordable >40%). Uses latest rental_metrics and regions for the chosen region.',
         parameters: [
           {
             name: 'salary',

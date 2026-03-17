@@ -548,10 +548,12 @@ const getAffordabilityIndex = async (req, res, next) => {
       rentToRegionIncomePct = (annualRent / regionIncome) * 100;
     }
 
+    const ONS_AFFORDABILITY_THRESHOLD_PCT = 30;
+    const ONS_STRETCHED_MAX_PCT = 40;
     let healthScore;
-    if (rentToSalaryRatio <= 0.25) {
+    if (rentToSalaryPct <= ONS_AFFORDABILITY_THRESHOLD_PCT) {
       healthScore = 'Affordable';
-    } else if (rentToSalaryRatio <= 0.4) {
+    } else if (rentToSalaryPct <= ONS_STRETCHED_MAX_PCT) {
       healthScore = 'Stretched';
     } else {
       healthScore = 'Unaffordable';
