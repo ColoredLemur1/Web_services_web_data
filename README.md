@@ -85,20 +85,32 @@ docker-compose up -d
 
 If you use Docker Compose, set `DB_*` in `.env` to match the Postgres container (user, host, database name, password, port). For a hosted deployment (e.g. Railway), use the credentials provided by your database service.
 
-5. Run migrations and seed data:
+5. **Add source data (CSV files) to `api-project/data/`**
+
+   Create the directory `api-project/data` if it does not exist. You need the following files for `npm run seed:all` to succeed:
+
+   | File (in `data/`) | Source | What to do |
+   |-------------------|--------|------------|
+   | UKHPI CSV | [UK House Price Index browse](https://landregistry.data.gov.uk/app/ukhpi/browse) (HM Land Registry) | Choose region and date range, **download as CSV**, save into `data/`. Rename to match the filename expected by `scripts/seed-housing-sales-data.js` (default: `ukhpi-united-kingdom-from-2025-02-01-to-2026-02-01.csv`), or change the `UKHPI_CSV` constant in that script to your filename. |
+   | `table26.csv`, `table28.csv`, `table30.csv` | [House price data: annual tables](https://www.ons.gov.uk/economy/inflationandpriceindices/datasets/housepriceindexannualtables2039) (ONS XLS) | Open the workbook. Export **Table 26**, **Table 28**, and **Table 30** each as **CSV** and save as `table26.csv`, `table28.csv`, and `table30.csv` in `data/`. Seeds use **Table 28** (buyer/dwelling prices) and **Table 30** (affordability); **Table 26** is included for alignment with the same dataset. |
+   | `rent.csv` | [Private rent and house prices, UK](https://www.ons.gov.uk/economy/inflationandpriceindices/bulletins/privaterentandhousepricesuk/february2026) (ONS) | Use the bulletin’s link to **Price Index of Private Rents** (or related) data and export or download the **full private rent** series as **CSV**. Save as `rent.csv` in `data/`. |
+
+6. Run migrations and seed data:
 
 ```bash
 npm run db:migrate
 npm run seed:all
 ```
 
-6. Start the server:
+7. Start the server:
 
 ```bash
 npm start
 ```
 
 Once the server is running, the API is available at your configured base URL. Interactive API documentation (Swagger UI) is served at path `/api-docs` (base URL + `/api-docs`).
+
+> **Note:** The production Docker image does not include `data/` or seed scripts. Run migrations and seeds from your machine (or a one-off job) against your database, then deploy the API.
 
 ### Building and Running with Docker
 
@@ -115,7 +127,7 @@ Run the container with environment variables set for `PORT`, `DB_*`, `API_KEY`, 
 - **Database connection:** Ensure Postgres is reachable and your env has correct `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
 - **API key:** Set `API_KEY` in your env so that POST/PUT/DELETE on regions work. Without it, those routes return 401. This is the key you may share with clients who need CRUD.
 - **GEMINI_API_KEY:** Set only if you enable AI insight endpoints. You (the deployer) are charged when those endpoints are called; consumers do not need this key.
-- **Seeding:** Run `npm run seed:all` after migrations.
+- **Seeding:** Run `npm run seed:all` after migrations. Ensure `api-project/data/` contains the CSV files described in Quick Start step 5.
 - **Tests:** Run `npm run test:ci` from `api-project/`. Requires Postgres and `API_KEY` in `.env` for full CRUD tests.
 
 ## Configuration (for deployers / API owners)
