@@ -156,6 +156,15 @@ All of the following are set by **whoever runs or deploys the API** (e.g. you on
 
 Full parameter tables, request/response examples, and schemas are in Swagger UI at `/api-docs`.
 
+### Error Handling
+
+The API uses standardized HTTP status codes and returns a consistent JSON error object (`error`, `message`) so clients can handle responses predictably.
+
+- **400 Bad Request** — Returned for invalid query parameters or malformed JSON.
+- **401 Unauthorized** — Returned when an API key is missing or invalid for protected routes.
+- **404 Not Found** — Returned when a requested resource or region identifier does not exist.
+- **503 Service Unavailable** — Returned when AI insights are requested but Gemini is not configured, or if the Gemini API fails.
+
 ## Public vs Admin Routes
 
 | Route type | Methods | Auth required |
